@@ -4,7 +4,6 @@
 *.iws
 *.iml
 
-.Makefile
-proxy
-http-over-socks-proxy
-docker-compose.yml
+./.Makefile
+./http-over-socks-proxy
+./docker-compose.yml
