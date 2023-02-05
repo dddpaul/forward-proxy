@@ -1,0 +1,10 @@
+# IDEA project settings
+.idea
+*.ipr
+*.iws
+*.iml
+
+.Makefile
+proxy
+http-over-socks-proxy
+docker-compose.yml
