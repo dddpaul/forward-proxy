@@ -36,6 +36,7 @@ func New(opts ...ProxyOption) *Proxy {
 	}
 
 	director := func(req *http.Request) {
+		log.Debugf("%v", req)
 	}
 
 	p.proxy = &httputil.ReverseProxy{
