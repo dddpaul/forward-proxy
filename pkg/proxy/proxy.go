@@ -50,13 +50,7 @@ func New(opts ...ProxyOption) *Proxy {
 
 	director := func(req *http.Request) {
 		ctx := context.WithValue(req.Context(), "trace_id", uuid.New())
-		logger.Log(ctx, nil).WithFields(log.Fields{
-			"request":    req.RequestURI,
-			"method":     req.Method,
-			"remote":     req.RemoteAddr,
-			"user-agent": req.UserAgent(),
-			"referer":    req.Referer(),
-		}).Debugf("request")
+		logger.LogRequest(ctx, req)
 		if p.trace {
 			r := req.WithContext(httptrace.WithClientTrace(ctx, transport.NewTrace(ctx)))
 			*req = *r
@@ -64,12 +58,7 @@ func New(opts ...ProxyOption) *Proxy {
 	}
 
 	modifier := func(res *http.Response) error {
-		req := res.Request
-		ctx := req.Context()
-		logger.Log(ctx, nil).WithFields(log.Fields{
-			"status":         res.Status,
-			"content-length": res.ContentLength,
-		}).Debugf("response")
+		logger.LogResponse(res.Request.Context(), res)
 		return nil
 	}
 
