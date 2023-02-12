@@ -5,6 +5,7 @@ import (
 	"net/http/httptrace"
 	"net/http/httputil"
 
+	"github.com/dddpaul/http-over-socks-proxy/pkg/logger"
 	"github.com/dddpaul/http-over-socks-proxy/pkg/transport"
 	log "github.com/sirupsen/logrus"
 )
@@ -13,7 +14,7 @@ type Proxy struct {
 	proxy     *httputil.ReverseProxy
 	port      string
 	transport http.RoundTripper
-	trace     *httptrace.ClientTrace
+	trace     bool
 }
 
 type ProxyOption func(p *Proxy)
@@ -32,9 +33,7 @@ func WithSocks(socks string) ProxyOption {
 
 func WithTrace(enabled bool) ProxyOption {
 	return func(p *Proxy) {
-		if enabled {
-			p.trace = transport.NewTrace()
-		}
+		p.trace = enabled
 	}
 }
 
@@ -46,15 +45,16 @@ func New(opts ...ProxyOption) *Proxy {
 	}
 
 	director := func(req *http.Request) {
-		log.WithFields(log.Fields{
+		ctx := req.Context()
+		logger.Log(ctx, nil).WithFields(log.Fields{
 			"request":    req.RequestURI,
 			"method":     req.Method,
 			"remote":     req.RemoteAddr,
 			"user-agent": req.UserAgent(),
 			"referer":    req.Referer(),
 		}).Debugf("request")
-		if p.trace != nil {
-			r := req.WithContext(httptrace.WithClientTrace(req.Context(), p.trace))
+		if p.trace {
+			r := req.WithContext(httptrace.WithClientTrace(ctx, transport.NewTrace(ctx)))
 			*req = *r
 		}
 	}

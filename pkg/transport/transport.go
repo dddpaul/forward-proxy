@@ -1,12 +1,13 @@
 package transport
 
 import (
+	"context"
 	"net/http"
 	"net/http/httptrace"
 	"net/url"
 	"time"
 
-	log "github.com/sirupsen/logrus"
+	"github.com/dddpaul/http-over-socks-proxy/pkg/logger"
 	"golang.org/x/net/proxy"
 )
 
@@ -39,12 +40,12 @@ func NewSocksTransport(socks string) http.RoundTripper {
 	}
 }
 
-func NewTrace() *httptrace.ClientTrace {
+func NewTrace(ctx context.Context) *httptrace.ClientTrace {
 	var start time.Time
 	return &httptrace.ClientTrace{
 		GetConn: func(hostPort string) { start = time.Now() },
 		GotFirstResponseByte: func() {
-			log.WithField("time_to_first_byte_received", time.Since(start)).Tracef("trace")
+			logger.Log(ctx, nil).WithField("time_to_first_byte_received", time.Since(start)).Tracef("trace")
 		},
 	}
 }
