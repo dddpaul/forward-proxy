@@ -19,7 +19,6 @@ func main() {
 	flag.BoolVar(&verbose, "verbose", false, "Enable debug logging")
 	flag.BoolVar(&trace, "trace", false, "Enable network tracing")
 	flag.StringVar(&port, "port", ":8080", "Port to listen (prepended by colon), i.e. :8080")
-	flag.StringVar(&socks, "socks", LookupEnvOrString("SOCKS_URL", ""), "SOCKS5 proxy url, i.e. socks://127.0.0.1:1080")
 
 	log.SetFormatter(&log.TextFormatter{
 		DisableColors: true,
@@ -37,13 +36,8 @@ func main() {
 		log.SetLevel(log.TraceLevel)
 	}
 
-	// if len(socks) == 0 {
-	// 	log.Panic("SOCKS5 proxy URL have to be specified")
-	// }
-
 	p := proxy.New(
 		proxy.WithPort(port),
-		proxy.WithSocks(socks),
 		proxy.WithTrace(trace))
 
 	p.Start()

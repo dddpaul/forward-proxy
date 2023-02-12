@@ -17,7 +17,6 @@ import (
 type Proxy struct {
 	httpProxy, httpsProxy http.Handler
 	port                  string
-	transport             http.RoundTripper
 	trace                 bool
 }
 
@@ -26,12 +25,6 @@ type ProxyOption func(p *Proxy)
 func WithPort(port string) ProxyOption {
 	return func(p *Proxy) {
 		p.port = port
-	}
-}
-
-func WithSocks(socks string) ProxyOption {
-	return func(p *Proxy) {
-		p.transport = transport.NewSocksTransport(socks)
 	}
 }
 
@@ -49,7 +42,6 @@ func New(opts ...ProxyOption) *Proxy {
 	}
 
 	p.httpProxy = &httputil.ReverseProxy{
-		Transport: p.transport,
 		Director: func(req *http.Request) {
 			ctx := context.WithValue(req.Context(), "trace_id", uuid.New())
 			logger.LogRequest(ctx, req)
@@ -109,12 +101,14 @@ func (p *HttpsProxy) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	}
 	logger.Log(ctx, nil).Debugf("TCP tunnel established")
 
-	tunnelConn := func(dst io.WriteCloser, src io.ReadCloser) {
+	copy := func(dst io.WriteCloser, src io.ReadCloser) {
+		defer func() {
+			dst.Close()
+			src.Close()
+		}()
 		io.Copy(dst, src)
-		dst.Close()
-		src.Close()
 	}
 
-	go tunnelConn(targetConn, clientConn)
-	go tunnelConn(clientConn, targetConn)
+	go copy(targetConn, clientConn)
+	go copy(clientConn, targetConn)
 }
