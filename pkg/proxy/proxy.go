@@ -56,7 +56,9 @@ func New(opts ...ProxyOption) *Proxy {
 		},
 	}
 
-	p.httpsProxy = &HttpsProxy{}
+	p.httpsProxy = &HttpsProxy{
+		trace: p.trace,
+	}
 
 	return p
 }
@@ -76,11 +78,17 @@ func (p *Proxy) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	}
 }
 
-type HttpsProxy struct{}
+type HttpsProxy struct {
+	trace bool
+}
 
 func (p *HttpsProxy) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	ctx := context.WithValue(req.Context(), "trace_id", uuid.New())
 	logger.LogRequest(ctx, req)
+	if p.trace {
+		r := req.WithContext(httptrace.WithClientTrace(ctx, transport.NewTrace(ctx)))
+		*req = *r
+	}
 
 	targetConn, err := net.Dial("tcp", req.Host)
 	if err != nil {
