@@ -37,9 +37,9 @@ func main() {
 		log.SetLevel(log.TraceLevel)
 	}
 
-	if len(socks) == 0 {
-		log.Panic("SOCKS5 proxy URL have to be specified")
-	}
+	// if len(socks) == 0 {
+	// 	log.Panic("SOCKS5 proxy URL have to be specified")
+	// }
 
 	p := proxy.New(
 		proxy.WithPort(port),

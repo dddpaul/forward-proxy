@@ -8,7 +8,6 @@ import (
 	"time"
 
 	"github.com/dddpaul/http-over-socks-proxy/pkg/logger"
-	"golang.org/x/net/proxy"
 )
 
 func NewSocksTransport(socks string) http.RoundTripper {
@@ -21,23 +20,18 @@ func NewSocksTransport(socks string) http.RoundTripper {
 		panic(err)
 	}
 
-	var auth *proxy.Auth
-	if u.User != nil {
-		auth = &proxy.Auth{
-			User: u.User.Username(),
-		}
-		if p, ok := u.User.Password(); ok {
-			auth.Password = p
-		}
+	proxies := func(req *http.Request) (*url.URL, error) {
+		return u, nil
 	}
 
-	dialer, err := proxy.SOCKS5("tcp", u.Host, auth, proxy.Direct)
-	if err != nil {
-		panic(err)
+	t := http.DefaultTransport
+
+	if transport, ok := t.(*http.Transport); ok {
+		transport.Proxy = proxies
+		return transport
 	}
-	return &http.Transport{
-		Dial: dialer.Dial,
-	}
+
+	return nil
 }
 
 func NewTrace(ctx context.Context) *httptrace.ClientTrace {

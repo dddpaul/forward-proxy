@@ -2,6 +2,8 @@ package proxy
 
 import (
 	"context"
+	"io"
+	"net"
 	"net/http"
 	"net/http/httptrace"
 	"net/http/httputil"
@@ -13,7 +15,7 @@ import (
 )
 
 type Proxy struct {
-	proxy     *httputil.ReverseProxy
+	httpProxy *httputil.ReverseProxy
 	port      string
 	transport http.RoundTripper
 	trace     bool
@@ -71,7 +73,7 @@ func New(opts ...ProxyOption) *Proxy {
 		return nil
 	}
 
-	p.proxy = &httputil.ReverseProxy{
+	p.httpProxy = &httputil.ReverseProxy{
 		Transport:      p.transport,
 		Director:       director,
 		ModifyResponse: modifier,
@@ -82,7 +84,54 @@ func New(opts ...ProxyOption) *Proxy {
 
 func (p *Proxy) Start() {
 	log.Infof("Start HTTP proxy on port %s", p.port)
-	if err := http.ListenAndServe(p.port, p.proxy); err != nil {
+	if err := http.ListenAndServe(p.port, p); err != nil {
 		panic(err)
 	}
+}
+
+func (p *Proxy) ServeHTTP(w http.ResponseWriter, req *http.Request) {
+	if req.Method == http.MethodConnect {
+		proxyConnect(w, req)
+	} else {
+		p.httpProxy.ServeHTTP(w, req)
+	}
+}
+
+func proxyConnect(w http.ResponseWriter, req *http.Request) {
+	ctx := context.WithValue(req.Context(), "trace_id", uuid.New())
+	logger.Log(ctx, nil).WithFields(log.Fields{
+		"request":    req.RequestURI,
+		"method":     req.Method,
+		"remote":     req.RemoteAddr,
+		"user-agent": req.UserAgent(),
+		"referer":    req.Referer(),
+	}).Debugf("request")
+
+	targetConn, err := net.Dial("tcp", req.Host)
+	if err != nil {
+		logger.Log(ctx, nil).Errorf("request")
+		http.Error(w, err.Error(), http.StatusServiceUnavailable)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+	hj, ok := w.(http.Hijacker)
+	if !ok {
+		panic("HTTP server doesn't support hijacking connection")
+	}
+
+	clientConn, _, err := hj.Hijack()
+	if err != nil {
+		panic("HTTP hijacking failed")
+	}
+	logger.Log(ctx, nil).Debugf("TCP tunnel established")
+
+	go tunnelConn(targetConn, clientConn)
+	go tunnelConn(clientConn, targetConn)
+}
+
+func tunnelConn(dst io.WriteCloser, src io.ReadCloser) {
+	io.Copy(dst, src)
+	dst.Close()
+	src.Close()
 }
