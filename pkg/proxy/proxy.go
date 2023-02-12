@@ -61,9 +61,20 @@ func New(opts ...ProxyOption) *Proxy {
 		}
 	}
 
+	modifier := func(res *http.Response) error {
+		req := res.Request
+		ctx := req.Context()
+		logger.Log(ctx, nil).WithFields(log.Fields{
+			"status":         res.Status,
+			"content-length": res.ContentLength,
+		}).Debugf("response")
+		return nil
+	}
+
 	p.proxy = &httputil.ReverseProxy{
-		Transport: p.transport,
-		Director:  director,
+		Transport:      p.transport,
+		Director:       director,
+		ModifyResponse: modifier,
 	}
 
 	return p
