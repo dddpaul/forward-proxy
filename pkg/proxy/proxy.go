@@ -15,10 +15,10 @@ import (
 )
 
 type Proxy struct {
-	httpProxy *httputil.ReverseProxy
-	port      string
-	transport http.RoundTripper
-	trace     bool
+	httpProxy, httpsProxy http.Handler
+	port                  string
+	transport             http.RoundTripper
+	trace                 bool
 }
 
 type ProxyOption func(p *Proxy)
@@ -48,25 +48,23 @@ func New(opts ...ProxyOption) *Proxy {
 		opt(p)
 	}
 
-	director := func(req *http.Request) {
-		ctx := context.WithValue(req.Context(), "trace_id", uuid.New())
-		logger.LogRequest(ctx, req)
-		if p.trace {
-			r := req.WithContext(httptrace.WithClientTrace(ctx, transport.NewTrace(ctx)))
-			*req = *r
-		}
-	}
-
-	modifier := func(res *http.Response) error {
-		logger.LogResponse(res.Request.Context(), res)
-		return nil
-	}
-
 	p.httpProxy = &httputil.ReverseProxy{
-		Transport:      p.transport,
-		Director:       director,
-		ModifyResponse: modifier,
+		Transport: p.transport,
+		Director: func(req *http.Request) {
+			ctx := context.WithValue(req.Context(), "trace_id", uuid.New())
+			logger.LogRequest(ctx, req)
+			if p.trace {
+				r := req.WithContext(httptrace.WithClientTrace(ctx, transport.NewTrace(ctx)))
+				*req = *r
+			}
+		},
+		ModifyResponse: func(res *http.Response) error {
+			logger.LogResponse(res.Request.Context(), res)
+			return nil
+		},
 	}
+
+	p.httpsProxy = &HttpsProxy{}
 
 	return p
 }
@@ -80,21 +78,17 @@ func (p *Proxy) Start() {
 
 func (p *Proxy) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	if req.Method == http.MethodConnect {
-		proxyConnect(w, req)
+		p.httpsProxy.ServeHTTP(w, req)
 	} else {
 		p.httpProxy.ServeHTTP(w, req)
 	}
 }
 
-func proxyConnect(w http.ResponseWriter, req *http.Request) {
+type HttpsProxy struct{}
+
+func (p *HttpsProxy) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	ctx := context.WithValue(req.Context(), "trace_id", uuid.New())
-	logger.Log(ctx, nil).WithFields(log.Fields{
-		"request":    req.RequestURI,
-		"method":     req.Method,
-		"remote":     req.RemoteAddr,
-		"user-agent": req.UserAgent(),
-		"referer":    req.Referer(),
-	}).Debugf("request")
+	logger.LogRequest(ctx, req)
 
 	targetConn, err := net.Dial("tcp", req.Host)
 	if err != nil {
@@ -115,12 +109,12 @@ func proxyConnect(w http.ResponseWriter, req *http.Request) {
 	}
 	logger.Log(ctx, nil).Debugf("TCP tunnel established")
 
+	tunnelConn := func(dst io.WriteCloser, src io.ReadCloser) {
+		io.Copy(dst, src)
+		dst.Close()
+		src.Close()
+	}
+
 	go tunnelConn(targetConn, clientConn)
 	go tunnelConn(clientConn, targetConn)
-}
-
-func tunnelConn(dst io.WriteCloser, src io.ReadCloser) {
-	io.Copy(dst, src)
-	dst.Close()
-	src.Close()
 }
