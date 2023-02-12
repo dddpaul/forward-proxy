@@ -2,6 +2,7 @@ package proxy
 
 import (
 	"net/http"
+	"net/http/httptrace"
 	"net/http/httputil"
 
 	"github.com/dddpaul/http-over-socks-proxy/pkg/transport"
@@ -12,6 +13,7 @@ type Proxy struct {
 	proxy     *httputil.ReverseProxy
 	port      string
 	transport http.RoundTripper
+	trace     *httptrace.ClientTrace
 }
 
 type ProxyOption func(p *Proxy)
@@ -25,6 +27,14 @@ func WithPort(port string) ProxyOption {
 func WithSocks(socks string) ProxyOption {
 	return func(p *Proxy) {
 		p.transport = transport.NewSocksTransport(socks)
+	}
+}
+
+func WithTrace(enabled bool) ProxyOption {
+	return func(p *Proxy) {
+		if enabled {
+			p.trace = transport.NewTrace()
+		}
 	}
 }
 
@@ -43,6 +53,10 @@ func New(opts ...ProxyOption) *Proxy {
 			"user-agent": req.UserAgent(),
 			"referer":    req.Referer(),
 		}).Debugf("request")
+		if p.trace != nil {
+			r := req.WithContext(httptrace.WithClientTrace(req.Context(), p.trace))
+			*req = *r
+		}
 	}
 
 	p.proxy = &httputil.ReverseProxy{
