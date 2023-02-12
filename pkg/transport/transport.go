@@ -45,7 +45,7 @@ func NewTrace(ctx context.Context) *httptrace.ClientTrace {
 	return &httptrace.ClientTrace{
 		GetConn: func(hostPort string) { start = time.Now() },
 		GotFirstResponseByte: func() {
-			logger.Log(ctx, nil).WithField("time_to_first_byte_received", time.Since(start)).Tracef("trace")
+			logger.Log(ctx, nil).WithField("time_to_first_byte_received", time.Since(start)).Tracef("request")
 		},
 	}
 }

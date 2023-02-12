@@ -1,12 +1,14 @@
 package proxy
 
 import (
+	"context"
 	"net/http"
 	"net/http/httptrace"
 	"net/http/httputil"
 
 	"github.com/dddpaul/http-over-socks-proxy/pkg/logger"
 	"github.com/dddpaul/http-over-socks-proxy/pkg/transport"
+	"github.com/google/uuid"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -45,7 +47,7 @@ func New(opts ...ProxyOption) *Proxy {
 	}
 
 	director := func(req *http.Request) {
-		ctx := req.Context()
+		ctx := context.WithValue(req.Context(), "trace_id", uuid.New())
 		logger.Log(ctx, nil).WithFields(log.Fields{
 			"request":    req.RequestURI,
 			"method":     req.Method,
