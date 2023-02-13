@@ -4,11 +4,10 @@ import (
 	"io"
 	"net"
 	"net/http"
-	"net/http/httptrace"
 	"net/http/httputil"
 
 	"github.com/dddpaul/http-over-socks-proxy/pkg/logger"
-	"github.com/dddpaul/http-over-socks-proxy/pkg/transport"
+	"github.com/dddpaul/http-over-socks-proxy/pkg/trace"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -41,11 +40,10 @@ func New(opts ...ProxyOption) *Proxy {
 
 	p.httpProxy = &httputil.ReverseProxy{
 		Director: func(req *http.Request) {
-			ctx := logger.TraceContext(req)
+			ctx := trace.Context(req)
 			logger.LogRequest(ctx, req)
 			if p.trace {
-				r := req.WithContext(httptrace.WithClientTrace(ctx, transport.NewTrace(ctx)))
-				*req = *r
+				trace.Request(ctx, req)
 			}
 		},
 		ModifyResponse: func(res *http.Response) error {
@@ -81,11 +79,10 @@ type HttpsProxy struct {
 }
 
 func (p *HttpsProxy) ServeHTTP(w http.ResponseWriter, req *http.Request) {
-	ctx := logger.TraceContext(req)
+	ctx := trace.Context(req)
 	logger.LogRequest(ctx, req)
 	if p.trace {
-		r := req.WithContext(httptrace.WithClientTrace(ctx, transport.NewTrace(ctx)))
-		*req = *r
+		trace.Request(ctx, req)
 	}
 
 	var d net.Dialer
