@@ -90,7 +90,8 @@ func (p *HttpsProxy) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 		*req = *r
 	}
 
-	targetConn, err := net.Dial("tcp", req.Host)
+	var d net.Dialer
+	targetConn, err := d.DialContext(ctx, "tcp", req.Host)
 	if err != nil {
 		logger.Log(ctx, nil).Errorf("request")
 		http.Error(w, err.Error(), http.StatusServiceUnavailable)
@@ -107,7 +108,7 @@ func (p *HttpsProxy) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	if err != nil {
 		panic("HTTP hijacking failed")
 	}
-	logger.Log(ctx, nil).Debugf("TCP tunnel established")
+	logger.Log(ctx, nil).Tracef("TCP tunnel established")
 
 	copy := func(dst io.WriteCloser, src io.ReadCloser) {
 		defer func() {
