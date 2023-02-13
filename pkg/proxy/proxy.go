@@ -1,7 +1,6 @@
 package proxy
 
 import (
-	"context"
 	"io"
 	"net"
 	"net/http"
@@ -10,7 +9,6 @@ import (
 
 	"github.com/dddpaul/http-over-socks-proxy/pkg/logger"
 	"github.com/dddpaul/http-over-socks-proxy/pkg/transport"
-	"github.com/google/uuid"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -43,7 +41,7 @@ func New(opts ...ProxyOption) *Proxy {
 
 	p.httpProxy = &httputil.ReverseProxy{
 		Director: func(req *http.Request) {
-			ctx := context.WithValue(req.Context(), "trace_id", uuid.New())
+			ctx := logger.TraceContext(req)
 			logger.LogRequest(ctx, req)
 			if p.trace {
 				r := req.WithContext(httptrace.WithClientTrace(ctx, transport.NewTrace(ctx)))
@@ -83,7 +81,7 @@ type HttpsProxy struct {
 }
 
 func (p *HttpsProxy) ServeHTTP(w http.ResponseWriter, req *http.Request) {
-	ctx := context.WithValue(req.Context(), "trace_id", uuid.New())
+	ctx := logger.TraceContext(req)
 	logger.LogRequest(ctx, req)
 	if p.trace {
 		r := req.WithContext(httptrace.WithClientTrace(ctx, transport.NewTrace(ctx)))

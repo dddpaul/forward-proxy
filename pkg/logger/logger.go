@@ -4,6 +4,7 @@ import (
 	"context"
 	"net/http"
 
+	"github.com/google/uuid"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -33,4 +34,8 @@ func LogResponse(ctx context.Context, res *http.Response) {
 		"status":         res.Status,
 		"content-length": res.ContentLength,
 	}).Debugf("response")
+}
+
+func TraceContext(req *http.Request) context.Context {
+	return context.WithValue(req.Context(), "trace_id", uuid.New())
 }
