@@ -2,17 +2,18 @@ package proxy
 
 import (
 	"io"
-	"net"
 	"net/http"
 	"net/http/httputil"
 
 	"github.com/dddpaul/http-over-socks-proxy/pkg/logger"
 	"github.com/dddpaul/http-over-socks-proxy/pkg/trace"
 	log "github.com/sirupsen/logrus"
+	"golang.org/x/net/proxy"
 )
 
 type Proxy struct {
 	httpProxy, httpsProxy http.Handler
+	dialer                proxy.Dialer
 	port                  string
 	trace                 bool
 }
@@ -22,6 +23,12 @@ type ProxyOption func(p *Proxy)
 func WithPort(port string) ProxyOption {
 	return func(p *Proxy) {
 		p.port = port
+	}
+}
+
+func WithSocks(socks string) ProxyOption {
+	return func(p *Proxy) {
+		p.dialer = NewDialer(socks)
 	}
 }
 
@@ -39,6 +46,9 @@ func New(opts ...ProxyOption) *Proxy {
 	}
 
 	p.httpProxy = &httputil.ReverseProxy{
+		Transport: &http.Transport{
+			Dial: p.dialer.Dial,
+		},
 		Director: func(req *http.Request) {
 			ctx := trace.Context(req)
 			logger.LogRequest(ctx, req)
@@ -53,7 +63,8 @@ func New(opts ...ProxyOption) *Proxy {
 	}
 
 	p.httpsProxy = &HttpsProxy{
-		trace: p.trace,
+		dialer: p.dialer,
+		trace:  p.trace,
 	}
 
 	return p
@@ -75,7 +86,8 @@ func (p *Proxy) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 }
 
 type HttpsProxy struct {
-	trace bool
+	dialer proxy.Dialer
+	trace  bool
 }
 
 func (p *HttpsProxy) ServeHTTP(w http.ResponseWriter, req *http.Request) {
@@ -85,8 +97,7 @@ func (p *HttpsProxy) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 		trace.Request(ctx, req)
 	}
 
-	var d net.Dialer
-	targetConn, err := d.DialContext(ctx, "tcp", req.Host)
+	targetConn, err := p.dialer.Dial("tcp", req.Host)
 	if err != nil {
 		logger.Log(ctx, nil).Errorf("request")
 		http.Error(w, err.Error(), http.StatusServiceUnavailable)
