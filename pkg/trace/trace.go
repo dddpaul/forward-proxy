@@ -10,21 +10,20 @@ import (
 	"github.com/google/uuid"
 )
 
-func New(ctx context.Context) *httptrace.ClientTrace {
+// Inject trace_id field into request's context
+func WithTraceID(req *http.Request) context.Context {
+	return context.WithValue(req.Context(), "trace_id", uuid.New())
+}
+
+// Inject ClientTrace into request's context and modify original request
+func WithClientTrace(ctx context.Context, req *http.Request) {
 	var start time.Time
-	return &httptrace.ClientTrace{
+	trace := &httptrace.ClientTrace{
 		GetConn: func(hostPort string) { start = time.Now() },
 		GotFirstResponseByte: func() {
 			logger.Log(ctx, nil).WithField("time_to_first_byte_received", time.Since(start)).Tracef("request")
 		},
 	}
-}
-
-func Context(req *http.Request) context.Context {
-	return context.WithValue(req.Context(), "trace_id", uuid.New())
-}
-
-func Request(ctx context.Context, req *http.Request) {
-	r := req.WithContext(httptrace.WithClientTrace(ctx, New(ctx)))
+	r := req.WithContext(httptrace.WithClientTrace(ctx, trace))
 	*req = *r
 }
