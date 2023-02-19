@@ -8,15 +8,18 @@ import (
 	"golang.org/x/net/proxy"
 )
 
+var directDialer = &net.Dialer{}
+
 func NewDialer(socks string) proxy.Dialer {
 	if len(socks) == 0 {
 		log.Infof("SOCKS5 proxy URL is empty, use DIRECT connection")
-		return &net.Dialer{}
+		return directDialer
 	}
 
 	u, err := url.Parse(socks)
 	if err != nil {
-		panic(err)
+		log.Infof("SOCKS5 proxy URL parse error, use DIRECT connection")
+		return directDialer
 	}
 
 	var auth *proxy.Auth
@@ -32,7 +35,7 @@ func NewDialer(socks string) proxy.Dialer {
 	d, err := proxy.SOCKS5("tcp", u.Host, auth, proxy.Direct)
 	if err != nil {
 		log.Infof("SOCKS5 proxy init error, use DIRECT connection")
-		return &net.Dialer{}
+		return directDialer
 	}
 	return d
 }
