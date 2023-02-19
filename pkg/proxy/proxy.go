@@ -49,7 +49,8 @@ func New(opts ...ProxyOption) *Proxy {
 		Transport: &http.Transport{
 			Dial: p.dialer.Dial,
 		},
-		Director: func(req *http.Request) {
+		Rewrite: func(r *httputil.ProxyRequest) {
+			req := r.Out
 			ctx := trace.Context(req)
 			logger.LogRequest(ctx, req)
 			if p.trace {
