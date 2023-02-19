@@ -1,6 +1,6 @@
 .PHONY: all build release
 
-IMAGE=dddpaul/hosp
+IMAGE=dddpaul/forward-proxy
 
 all: build
 
