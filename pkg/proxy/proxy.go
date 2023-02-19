@@ -5,8 +5,8 @@ import (
 	"net/http"
 	"net/http/httputil"
 
-	"github.com/dddpaul/http-over-socks-proxy/pkg/logger"
-	"github.com/dddpaul/http-over-socks-proxy/pkg/trace"
+	"github.com/dddpaul/forward-proxy/pkg/logger"
+	"github.com/dddpaul/forward-proxy/pkg/trace"
 	log "github.com/sirupsen/logrus"
 	"golang.org/x/net/proxy"
 )

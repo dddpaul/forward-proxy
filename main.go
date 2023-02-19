@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/dddpaul/http-over-socks-proxy/pkg/proxy"
+	"github.com/dddpaul/forward-proxy/pkg/proxy"
 	log "github.com/sirupsen/logrus"
 )
 

@@ -1,7 +1,9 @@
-HTTP over SOCKS proxy
+Forward HTTP proxy
 =========
 
-Simple golang written http-over-socks proxy inspired by https://github.com/oyyd/http-proxy-to-socks.
+Simple golang written HTTP proxy inspired by https://github.com/oyyd/http-proxy-to-socks.
+
+Can be used as ordinal forward HTTP proxy and as HTTP-over-SOCKS proxy if `socks` parameter is specified.
 
 Usage:
 ```
@@ -14,3 +16,6 @@ Usage:
   -verbose
     	Enable debug logging
 ```
+
+Links:
+* https://eli.thegreenplace.net/2022/go-and-proxy-servers-part-1-http-proxies/

@@ -6,7 +6,7 @@ import (
 	"net/http/httptrace"
 	"time"
 
-	"github.com/dddpaul/http-over-socks-proxy/pkg/logger"
+	"github.com/dddpaul/forward-proxy/pkg/logger"
 	"github.com/google/uuid"
 )
 

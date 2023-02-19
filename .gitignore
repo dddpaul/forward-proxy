@@ -5,5 +5,5 @@
 *.iml
 
 ./.Makefile
-./http-over-socks-proxy
+./forward-proxy
 ./docker-compose.yml

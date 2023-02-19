@@ -1,5 +1,5 @@
 FROM golang:1.20.1 as builder
-WORKDIR /go/src/github.com/dddpaul/http-over-socks-proxy
+WORKDIR /go/src/github.com/dddpaul/forward-proxy
 ADD . ./
 RUN make build-alpine
 
@@ -9,7 +9,7 @@ RUN apk add --update ca-certificates && \
     rm -rf /var/cache/apk/* /tmp/* && \
     update-ca-certificates
 WORKDIR /app
-COPY --from=builder /go/src/github.com/dddpaul/http-over-socks-proxy/bin/proxy .
+COPY --from=builder /go/src/github.com/dddpaul/forward-proxy/bin/proxy .
 #EXPOSE 8080
 
 ENTRYPOINT ["./proxy"]

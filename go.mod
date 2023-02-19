@@ -1,4 +1,4 @@
-module github.com/dddpaul/http-over-socks-proxy
+module github.com/dddpaul/forward-proxy
 
 go 1.20
 
