@@ -1,4 +1,4 @@
-FROM golang:1.19.5 as builder
+FROM golang:1.20.1 as builder
 WORKDIR /go/src/github.com/dddpaul/http-over-socks-proxy
 ADD . ./
 RUN make build-alpine
