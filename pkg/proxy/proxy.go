@@ -4,6 +4,7 @@ import (
 	"io"
 	"net/http"
 	"net/http/httputil"
+	"time"
 
 	"github.com/dddpaul/forward-proxy/pkg/logger"
 	"github.com/dddpaul/forward-proxy/pkg/trace"
@@ -94,10 +95,8 @@ type HttpsProxy struct {
 func (p *HttpsProxy) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	ctx := trace.WithTraceID(req)
 	logger.LogRequest(ctx, req)
-	if p.trace {
-		trace.WithClientTrace(ctx, req)
-	}
 
+	start := time.Now()
 	targetConn, err := p.dialer.Dial("tcp", req.Host)
 	if err != nil {
 		logger.Log(ctx, nil).Errorf("request")
@@ -115,7 +114,10 @@ func (p *HttpsProxy) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	if err != nil {
 		panic("HTTP hijacking failed")
 	}
-	logger.Log(ctx, nil).Tracef("TCP tunnel established")
+	logger.Log(ctx, nil).WithFields(log.Fields{
+		"remote":          clientConn.RemoteAddr(),
+		"time_to_connect": time.Since(start),
+	}).Tracef("TCP tunnel established")
 
 	copy := func(dst io.WriteCloser, src io.ReadCloser) {
 		defer func() {
