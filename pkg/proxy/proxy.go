@@ -52,10 +52,10 @@ func New(opts ...ProxyOption) *Proxy {
 		},
 		Rewrite: func(r *httputil.ProxyRequest) {
 			req := r.Out
-			ctx := trace.WithTraceID(req)
-			logger.LogRequest(ctx, req)
+			trace.WithTraceID1(req)
+			logger.LogRequest(req.Context(), req)
 			if p.trace {
-				trace.WithClientTrace(ctx, req)
+				trace.WithClientTrace(req.Context(), req)
 			}
 		},
 		ModifyResponse: func(res *http.Response) error {
