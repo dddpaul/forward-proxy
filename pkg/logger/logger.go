@@ -18,8 +18,8 @@ func Log(ctx context.Context, err error) *log.Entry {
 	return entry
 }
 
-func LogRequest(ctx context.Context, req *http.Request) {
-	Log(ctx, nil).WithFields(log.Fields{
+func LogRequest(req *http.Request) {
+	Log(req.Context(), nil).WithFields(log.Fields{
 		"request":    req.RequestURI,
 		"method":     req.Method,
 		"remote":     req.RemoteAddr,

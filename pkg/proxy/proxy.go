@@ -53,7 +53,7 @@ func New(opts ...ProxyOption) *Proxy {
 		Rewrite: func(r *httputil.ProxyRequest) {
 			req := r.Out
 			trace.WithTraceID(req)
-			logger.LogRequest(req.Context(), req)
+			logger.LogRequest(req)
 			if p.trace {
 				trace.WithClientTrace(req.Context(), req)
 			}
@@ -94,7 +94,7 @@ type HttpsProxy struct {
 
 func (p *HttpsProxy) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	trace.WithTraceID(req)
-	logger.LogRequest(req.Context(), req)
+	logger.LogRequest(req)
 
 	start := time.Now()
 	targetConn, err := p.dialer.Dial("tcp", req.Host)
