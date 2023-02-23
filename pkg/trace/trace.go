@@ -18,14 +18,14 @@ func WithTraceID(req *http.Request) {
 }
 
 // Inject ClientTrace into request's context and modify original request
-func WithClientTrace(ctx context.Context, req *http.Request) {
+func WithClientTrace(req *http.Request) {
 	var start time.Time
 	trace := &httptrace.ClientTrace{
 		GetConn: func(hostPort string) { start = time.Now() },
 		GotFirstResponseByte: func() {
-			logger.Log(ctx, nil).WithField("time_to_first_byte_received", time.Since(start)).Tracef("request")
+			logger.Log(req.Context(), nil).WithField("time_to_first_byte_received", time.Since(start)).Tracef("request")
 		},
 	}
-	r := req.WithContext(httptrace.WithClientTrace(ctx, trace))
+	r := req.WithContext(httptrace.WithClientTrace(req.Context(), trace))
 	*req = *r
 }

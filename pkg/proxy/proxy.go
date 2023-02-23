@@ -53,7 +53,7 @@ func New(opts ...ProxyOption) *Proxy {
 		Rewrite: func(r *httputil.ProxyRequest) {
 			req := r.Out
 			if p.trace {
-				trace.WithClientTrace(req.Context(), req)
+				trace.WithClientTrace(req)
 			}
 		},
 		ModifyResponse: func(res *http.Response) error {
