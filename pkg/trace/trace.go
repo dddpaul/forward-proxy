@@ -11,7 +11,7 @@ import (
 )
 
 // Inject trace_id field into request's context and modify original request
-func WithTraceID1(req *http.Request) {
+func WithTraceID(req *http.Request) {
 	ctx := context.WithValue(req.Context(), "trace_id", uuid.New())
 	r := req.WithContext(ctx)
 	*req = *r
