@@ -15,6 +15,13 @@ func WithTraceID(req *http.Request) context.Context {
 	return context.WithValue(req.Context(), "trace_id", uuid.New())
 }
 
+// Inject trace_id field into request's context and modify original request
+func WithTraceID1(req *http.Request) {
+	ctx := context.WithValue(req.Context(), "trace_id", uuid.New())
+	r := req.WithContext(ctx)
+	*req = *r
+}
+
 // Inject ClientTrace into request's context and modify original request
 func WithClientTrace(ctx context.Context, req *http.Request) {
 	var start time.Time
