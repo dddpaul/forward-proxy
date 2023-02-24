@@ -51,9 +51,8 @@ func New(opts ...ProxyOption) *Proxy {
 			Dial: p.dialer.Dial,
 		},
 		Rewrite: func(r *httputil.ProxyRequest) {
-			req := r.Out
 			if p.trace {
-				trace.WithClientTrace(req)
+				trace.WithClientTrace(r.Out)
 			}
 		},
 		ModifyResponse: func(res *http.Response) error {
