@@ -57,7 +57,7 @@ func New(opts ...ProxyOption) *Proxy {
 			}
 		},
 		ModifyResponse: func(res *http.Response) error {
-			logger.LogResponse(res.Request.Context(), res)
+			logger.LogResponse(res)
 			return nil
 		},
 	}

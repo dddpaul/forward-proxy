@@ -28,8 +28,8 @@ func LogRequest(req *http.Request) {
 	}).Debugf("request")
 }
 
-func LogResponse(ctx context.Context, res *http.Response) {
-	Log(ctx, nil).WithFields(log.Fields{
+func LogResponse(res *http.Response) {
+	Log(res.Request.Context(), nil).WithFields(log.Fields{
 		"status":         res.Status,
 		"content-length": res.ContentLength,
 	}).Debugf("response")
