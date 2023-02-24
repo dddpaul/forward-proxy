@@ -71,14 +71,12 @@ func New(opts ...ProxyOption) *Proxy {
 
 func (p *Proxy) Start() {
 	log.Infof("Start HTTP proxy on port %s", p.port)
-	if err := http.ListenAndServe(p.port, p); err != nil {
+	if err := http.ListenAndServe(p.port, &trace.Trace{Handler: p}); err != nil {
 		panic(err)
 	}
 }
 
 func (p *Proxy) ServeHTTP(w http.ResponseWriter, req *http.Request) {
-	trace.WithTraceID(req)
-	logger.LogRequest(req)
 	if req.Method == http.MethodConnect {
 		p.httpsProxy.ServeHTTP(w, req)
 	} else {

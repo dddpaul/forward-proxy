@@ -10,8 +10,18 @@ import (
 	"github.com/google/uuid"
 )
 
+type Trace struct {
+	Handler http.Handler
+}
+
+func (t *Trace) ServeHTTP(w http.ResponseWriter, req *http.Request) {
+	withTraceID(req)
+	logger.LogRequest(req)
+	t.Handler.ServeHTTP(w, req)
+}
+
 // Inject trace_id field into request's context and modify original request
-func WithTraceID(req *http.Request) {
+func withTraceID(req *http.Request) {
 	ctx := context.WithValue(req.Context(), "trace_id", uuid.New())
 	r := req.WithContext(ctx)
 	*req = *r
