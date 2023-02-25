@@ -4,6 +4,7 @@ import (
 	"context"
 	"net/http"
 	"net/http/httptrace"
+	"strings"
 	"time"
 
 	"github.com/google/uuid"
@@ -62,8 +63,8 @@ func LogRequest(req *http.Request) {
 		"request":    req.RequestURI,
 		"method":     req.Method,
 		"remote":     req.RemoteAddr,
-		"user-agent": req.UserAgent(),
-		"referer":    req.Referer(),
+		"user-agent": escape(req.UserAgent()),
+		"referer":    escape(req.Referer()),
 	}).Debugf("request")
 }
 
@@ -72,4 +73,8 @@ func LogResponse(res *http.Response) {
 		"status":         res.Status,
 		"content-length": res.ContentLength,
 	}).Debugf("response")
+}
+
+func escape(s string) string {
+	return strings.Replace(strings.Replace(s, "\n", "", -1), "\r", "", -1)
 }
