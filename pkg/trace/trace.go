@@ -11,13 +11,17 @@ import (
 )
 
 type Trace struct {
-	Handler http.Handler
+	handler http.Handler
 }
 
 func (t *Trace) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	withTraceID(req)
 	logger.LogRequest(req)
-	t.Handler.ServeHTTP(w, req)
+	t.handler.ServeHTTP(w, req)
+}
+
+func New(h http.Handler) http.Handler {
+	return &Trace{handler: h}
 }
 
 // Inject trace_id field into request's context and modify original request

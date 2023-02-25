@@ -71,7 +71,7 @@ func New(opts ...ProxyOption) *Proxy {
 
 func (p *Proxy) Start() {
 	log.Infof("Start HTTP proxy on port %s", p.port)
-	if err := http.ListenAndServe(p.port, &trace.Trace{Handler: p}); err != nil {
+	if err := http.ListenAndServe(p.port, trace.New(p)); err != nil {
 		panic(err)
 	}
 }
