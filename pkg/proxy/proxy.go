@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"github.com/dddpaul/forward-proxy/pkg/logger"
-	"github.com/dddpaul/forward-proxy/pkg/trace"
 	log "github.com/sirupsen/logrus"
 	"golang.org/x/net/proxy"
 )
@@ -52,7 +51,7 @@ func New(opts ...ProxyOption) *Proxy {
 		},
 		Rewrite: func(r *httputil.ProxyRequest) {
 			if p.trace {
-				trace.WithClientTrace(r.Out)
+				logger.WithClientTrace(r.Out)
 			}
 		},
 		ModifyResponse: func(res *http.Response) error {
@@ -69,18 +68,18 @@ func New(opts ...ProxyOption) *Proxy {
 	return p
 }
 
-func (p *Proxy) Start() {
-	log.Infof("Start HTTP proxy on port %s", p.port)
-	if err := http.ListenAndServe(p.port, trace.New(p)); err != nil {
-		panic(err)
-	}
-}
-
 func (p *Proxy) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	if req.Method == http.MethodConnect {
 		p.httpsProxy.ServeHTTP(w, req)
 	} else {
 		p.httpProxy.ServeHTTP(w, req)
+	}
+}
+
+func (p *Proxy) Start() {
+	log.Infof("Start HTTP proxy on port %s", p.port)
+	if err := http.ListenAndServe(p.port, logger.NewMiddleware(p)); err != nil {
+		panic(err)
 	}
 }
 
