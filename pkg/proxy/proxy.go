@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"github.com/dddpaul/forward-proxy/pkg/logger"
-	"github.com/dddpaul/forward-proxy/pkg/trace"
 	log "github.com/sirupsen/logrus"
 	"golang.org/x/net/proxy"
 )
@@ -51,15 +50,12 @@ func New(opts ...ProxyOption) *Proxy {
 			Dial: p.dialer.Dial,
 		},
 		Rewrite: func(r *httputil.ProxyRequest) {
-			req := r.Out
-			ctx := trace.WithTraceID(req)
-			logger.LogRequest(ctx, req)
 			if p.trace {
-				trace.WithClientTrace(ctx, req)
+				logger.WithClientTrace(r.Out)
 			}
 		},
 		ModifyResponse: func(res *http.Response) error {
-			logger.LogResponse(res.Request.Context(), res)
+			logger.LogResponse(res)
 			return nil
 		},
 	}
@@ -72,18 +68,18 @@ func New(opts ...ProxyOption) *Proxy {
 	return p
 }
 
-func (p *Proxy) Start() {
-	log.Infof("Start HTTP proxy on port %s", p.port)
-	if err := http.ListenAndServe(p.port, p); err != nil {
-		panic(err)
-	}
-}
-
 func (p *Proxy) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	if req.Method == http.MethodConnect {
 		p.httpsProxy.ServeHTTP(w, req)
 	} else {
 		p.httpProxy.ServeHTTP(w, req)
+	}
+}
+
+func (p *Proxy) Start() {
+	log.Infof("Start HTTP proxy on port %s", p.port)
+	if err := http.ListenAndServe(p.port, logger.NewMiddleware(p)); err != nil {
+		panic(err)
 	}
 }
 
@@ -93,13 +89,10 @@ type HttpsProxy struct {
 }
 
 func (p *HttpsProxy) ServeHTTP(w http.ResponseWriter, req *http.Request) {
-	ctx := trace.WithTraceID(req)
-	logger.LogRequest(ctx, req)
-
 	start := time.Now()
 	targetConn, err := p.dialer.Dial("tcp", req.Host)
 	if err != nil {
-		logger.Log(ctx, nil).Errorf("request")
+		logger.Log(req.Context(), nil).Errorf("request")
 		http.Error(w, err.Error(), http.StatusServiceUnavailable)
 		return
 	}
@@ -114,7 +107,7 @@ func (p *HttpsProxy) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	if err != nil {
 		panic("HTTP hijacking failed")
 	}
-	logger.Log(ctx, nil).WithFields(log.Fields{
+	logger.Log(req.Context(), nil).WithFields(log.Fields{
 		"remote":          clientConn.RemoteAddr(),
 		"time_to_connect": time.Since(start),
 	}).Tracef("TCP tunnel established")
