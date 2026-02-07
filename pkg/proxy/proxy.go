@@ -2,6 +2,7 @@ package proxy
 
 import (
 	"io"
+	"net"
 	"net/http"
 	"net/http/httputil"
 	"time"
@@ -78,7 +79,12 @@ func (p *Proxy) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 
 func (p *Proxy) Start() {
 	log.Infof("Start HTTP proxy on port %s", p.port)
-	if err := http.ListenAndServe(p.port, logger.NewMiddleware(p)); err != nil {
+
+	ln, err := net.Listen("tcp4", p.port)
+	if err != nil {
+		panic(err)
+	}
+	if err := http.Serve(ln, logger.NewMiddleware(p)); err != nil {
 		panic(err)
 	}
 }
