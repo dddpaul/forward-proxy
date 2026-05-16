@@ -103,16 +103,31 @@ func (p *HttpsProxy) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	w.WriteHeader(http.StatusOK)
 	hj, ok := w.(http.Hijacker)
 	if !ok {
-		panic("HTTP server doesn't support hijacking connection")
+		logger.Log(req.Context(), nil).Error("HTTP server doesn't support hijacking connection")
+		targetConn.Close()
+		http.Error(w, "hijacking not supported", http.StatusInternalServerError)
+		return
 	}
 
 	clientConn, _, err := hj.Hijack()
 	if err != nil {
-		panic("HTTP hijacking failed")
+		logger.Log(req.Context(), nil).Errorf("HTTP hijacking failed: %v", err)
+		targetConn.Close()
+		return
 	}
+
+	// Spec-minimal CONNECT response written directly to the raw socket — Go's
+	// ResponseWriter would inject Date and Transfer-Encoding: chunked, which
+	// strict clients (e.g. bun's fetch) reject for a CONNECT 200.
+	if _, err := clientConn.Write([]byte("HTTP/1.1 200 Connection established\r\n\r\n")); err != nil {
+		logger.Log(req.Context(), nil).Errorf("write CONNECT response failed: %v", err)
+		targetConn.Close()
+		clientConn.Close()
+		return
+	}
+
 	logger.Log(req.Context(), nil).WithFields(log.Fields{
 		"remote":          clientConn.RemoteAddr(),
 		"time_to_connect": time.Since(start),
