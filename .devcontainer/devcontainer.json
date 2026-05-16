@@ -1,0 +1,72 @@
+{
+  "name": "Claude Code Sandbox",
+  "build": {
+    "dockerfile": "Dockerfile",
+    "args": {
+      "TZ": "${localEnv:TZ:America/Los_Angeles}",
+      "CLAUDE_CODE_VERSION": "latest",
+      "GIT_DELTA_VERSION": "0.18.2",
+      "ZSH_IN_DOCKER_VERSION": "1.2.0"
+    }
+  },
+  "runArgs": ["--cap-add=NET_ADMIN", "--cap-add=NET_RAW"],
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "anthropic.claude-code",
+        "dbaeumer.vscode-eslint",
+        "esbenp.prettier-vscode",
+        "eamodio.gitlens"
+      ],
+      "settings": {
+        "editor.formatOnSave": true,
+        "editor.defaultFormatter": "esbenp.prettier-vscode",
+        "editor.codeActionsOnSave": {
+          "source.fixAll.eslint": "explicit"
+        },
+        "terminal.integrated.defaultProfile.linux": "zsh",
+        "terminal.integrated.profiles.linux": {
+          "bash": {
+            "path": "bash",
+            "icon": "terminal-bash"
+          },
+          "zsh": {
+            "path": "zsh"
+          }
+        }
+      }
+    }
+  },
+  "remoteUser": "node",
+  "mounts": [
+    "source=claude-code-bashhistory-${devcontainerId},target=/commandhistory,type=volume",
+    "source=${localEnv:HOME}/.claude,target=/home/node/.claude,type=bind",
+    // Volume overlay for .claude: disables sandbox without modifying host settings.
+    // postCreateCommand copies host files into the volume and patches sandbox.enabled=false.
+    // bwrap can't create mount namespaces on Docker Desktop macOS, so sandbox must be off.
+    "source=claude-code-project-config-${devcontainerId},target=/workspace/.claude,type=volume",
+    "source=${localWorkspaceFolder}/.claude,target=/workspace-host-claude,type=bind,ro"
+  ],
+  "containerEnv": {
+    "CLAUDE_CODE_OAUTH_TOKEN": "${localEnv:CLAUDE_CODE_OAUTH_TOKEN}",
+    "NODE_OPTIONS": "--max-old-space-size=4096",
+    "CLAUDE_CONFIG_DIR": "/home/node/.claude",
+    "POWERLEVEL9K_DISABLE_GITSTATUS": "true",
+    "HTTP_PROXY": "http://host.docker.internal:3128",
+    "HTTPS_PROXY": "http://host.docker.internal:3128",
+    "NO_PROXY": "localhost,127.0.0.1,.local",
+    "TZ": "${localEnv:TZ:America/Los_Angeles}"
+  },
+  "workspaceMount": "source=${localWorkspaceFolder},target=/workspace,type=bind,consistency=delegated",
+  "workspaceFolder": "/workspace",
+  "postCreateCommand": "sudo chown node:node /workspace/.claude && cp -a /workspace-host-claude/. /workspace/.claude/ && jq '.sandbox.enabled = false' /workspace/.claude/settings.local.json > /tmp/s.json && mv /tmp/s.json /workspace/.claude/settings.local.json",
+  "postStartCommand": "sudo /usr/local/bin/init-firewall.sh",
+  "forwardPorts": [8080],
+  "portsAttributes": {
+    "8080": {
+      "label": "forward-proxy",
+      "onAutoForward": "notify"
+    }
+  },
+  "waitFor": "postStartCommand"
+}

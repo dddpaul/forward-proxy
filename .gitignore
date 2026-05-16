@@ -7,3 +7,20 @@
 ./.Makefile
 ./forward-proxy
 ./docker-compose.yml
+
+# Ralph working files (generated during runs)
+backlog/.ralph-status.json
+backlog/.ralph-run.log
+backlog/.ralph-launch.log
+backlog/.ralph-heartbeat
+
+# OS files
+.DS_Store
+
+# Claude Code (ignore local overrides, track project config)
+.claude/*
+!.claude/settings.json
+!.claude/task-reviewer-rules.md
+!.claude/brainstorm-rules.md
+!.claude/hooks/
+

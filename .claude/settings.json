@@ -1,0 +1,67 @@
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "if": "Bash(git commit *)",
+            "command": ".claude/hooks/commit-msg-guard.sh"
+          },
+          {
+            "type": "command",
+            "if": "Bash(gh pr create *)",
+            "command": ".claude/hooks/commit-msg-guard.sh"
+          },
+          {
+            "type": "command",
+            "if": "Bash(backlog task edit *)",
+            "command": ".claude/hooks/notes-guard.sh"
+          },
+          {
+            "type": "command",
+            "if": "Bash(backlog task create *)",
+            "command": ".claude/hooks/naming-guard.sh"
+          },
+          {
+            "type": "command",
+            "if": "Bash(git checkout -b *)",
+            "command": ".claude/hooks/naming-guard.sh"
+          },
+          {
+            "type": "command",
+            "if": "Bash(git commit *)",
+            "command": ".claude/hooks/commit-prefix-guard.sh"
+          }
+        ]
+      },
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": ".claude/hooks/master-branch-guard.sh"
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "if": "Bash(backlog task edit *)",
+            "command": ".claude/hooks/task-validator.sh"
+          },
+          {
+            "type": "command",
+            "if": "Bash(backlog task create *)",
+            "command": ".claude/hooks/task-validator.sh"
+          }
+        ]
+      }
+    ]
+  }
+}
