@@ -4,7 +4,7 @@ title: Fix HTTPS CONNECT response to be spec-compliant for strict clients
 status: Done
 assignee: []
 created_date: '2026-05-16 07:52'
-updated_date: '2026-05-16 08:07'
+updated_date: '2026-05-16 08:08'
 labels:
   - bug
   - https
@@ -65,4 +65,6 @@ Plan:
 Out-of-scope fix bundled here: .claude/hooks/commit-prefix-guard.sh gained a 'case "$cmd" in *"git commit"*) ;; *) exit 0;; esac' guard. The settings.json 'if: Bash(git commit *)' filter was not narrowing as expected (still under investigation upstream), causing the hook to block every Bash command on a task-* branch. Reviewer accepted as bundled scope rather than splitting to a separate task.
 
 Build/vet/test pass. Reviewer APPROVED on commit 1b0a5d7 of code (uncommitted at review time). Applied nit: Errorf -> Error at proxy.go:108. Runtime AC verified: AC#1 od -c output exactly 'HTTP/1.1 200 Connection established\r\n\r\n'; AC#4 curl 200; AC#5 bun fetch returns 503 (real HTTP status, not exception).
+
+Commit: `0155716` - task-1: spec-compliant CONNECT response, no panic on hijack failure
 <!-- SECTION:NOTES:END -->
